@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" id="themeColorMeta" content="#ea580c">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Tick">
+  <meta name="description" content="Tick - Modern Task Manager">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/png" href="public/tick-icon.png">
+  <link rel="apple-touch-icon" href="public/tick-icon.png">
+
+  <title>Tick</title>
+
+  <!-- Tailwind CSS Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Vazirmatn Font for Persian -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Vazirmatn:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#fff7ed',
+              100: '#ffedd5',
+              200: '#fed7aa',
+              300: '#fdba74',
+              400: '#fb923c',
+              500: '#f97316',
+              600: '#ea580c',
+              700: '#c2410c',
+              800: '#9a3412',
+              900: '#7c2d12',
+              950: '#431407',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', 'sans-serif'],
+            persian: ['Vazirmatn', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'slide-up': 'slideUp 0.3s ease-out',
+            'slide-down': 'slideDown 0.3s ease-out',
+            'fade-in': 'fadeIn 0.2s ease-out',
+            'scale-in': 'scaleIn 0.2s ease-out',
+            'bounce-in': 'bounceIn 0.4s ease-out',
+          },
+          keyframes: {
+            slideUp: {
+              '0%': { transform: 'translateY(20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            slideDown: {
+              '0%': { transform: 'translateY(-20px)', opacity: '0' },
+              '100%': { transform: 'translateY(0)', opacity: '1' },
+            },
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            scaleIn: {
+              '0%': { transform: 'scale(0.95)', opacity: '0' },
+              '100%': { transform: 'scale(1)', opacity: '1' },
+            },
+            bounceIn: {
+              '0%': { transform: 'scale(0.3)', opacity: '0' },
+              '50%': { transform: 'scale(1.05)' },
+              '70%': { transform: 'scale(0.9)' },
+              '100%': { transform: 'scale(1)', opacity: '1' },
+            },
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Base Styles */
+    * {
+      -webkit-tap-highlight-color: transparent;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    html.rtl {
+      direction: rtl;
+    }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    body.persian {
+      font-family: 'Vazirmatn', system-ui, sans-serif;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #d1d5db;
+      border-radius: 3px;
+    }
+    .dark ::-webkit-scrollbar-thumb {
+      background: #4b5563;
+    }
+
+    /* Task Card Styles */
+    .task-card {
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .task-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      border-radius: 0 2px 2px 0;
+      transition: background-color 0.2s ease;
+    }
+    .rtl .task-card::before {
+      left: auto;
+      right: 0;
+      border-radius: 2px 0 0 2px;
+    }
+    .task-card.priority-high::before { background-color: #ef4444; }
+    .task-card.priority-medium::before { background-color: #f97316; }
+    .task-card.priority-low::before { background-color: #22c55e; }
+    .task-card.completed { opacity: 0.7; }
+    .task-card.completed .task-title { text-decoration: line-through; }
+    .task-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+    }
+    .dark .task-card:hover {
+      box-shadow: 0 8px 25px rgba(0,0,0,0.3);
+    }
+
+    /* Line clamp fallback (for browsers/Tailwind versions without line-clamp) */
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    /* Sidebar */
+    .sidebar-link {
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .sidebar-link::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 0;
+      border-radius: 0 3px 3px 0;
+      transition: height 0.2s ease;
+    }
+    .rtl .sidebar-link::after {
+      left: auto;
+      right: 0;
+      border-radius: 3px 0 0 3px;
+    }
+    .sidebar-link.active::after {
+      height: 60%;
+      background-color: #f97316;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    /* Checkbox custom */
+    .custom-checkbox {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #d1d5db;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    .custom-checkbox:hover {
+      border-color: #f97316;
+      background-color: #fff7ed;
+    }
+    .dark .custom-checkbox {
+      border-color: #4b5563;
+    }
+    .dark .custom-checkbox:hover {
+      border-color: #f97316;
+      background-color: rgba(249, 115, 22, 0.1);
+    }
+    .custom-checkbox.checked {
+      background-color: #f97316;
+      border-color: #f97316;
+    }
+    .custom-checkbox.checked:hover {
+      background-color: #ea580c;
+      border-color: #ea580c;
+    }
+
+    /* Priority badges */
+    .priority-badge {
+      padding: 2px 10px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    /* Status tabs */
+    .status-tab {
+      transition: all 0.2s ease;
+    }
+    .status-tab.active {
+      color: #f97316;
+      border-bottom-color: #f97316;
+    }
+
+    /* Empty state */
+    .empty-state svg {
+      opacity: 0.5;
+    }
+
+    /* Toast notification */
+    .toast {
+      animation: slideUp 0.3s ease-out;
+    }
+
+    /* Drag and drop */
+    .task-card.dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+    .task-card.drag-over {
+      box-shadow: 0 -3px 0 0 #f97316;
+    }
+
+    /* Mobile bottom nav */
+    .bottom-nav-item {
+      transition: all 0.2s ease;
+    }
+    .bottom-nav-item.active {
+      color: #f97316;
+    }
+    .bottom-nav-item.active svg {
+      stroke: #f97316;
+    }
+
+    /* Stats cards */
+    .stat-card {
+      transition: all 0.2s ease;
+    }
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+
+    /* Smooth sidebar */
+    .sidebar {
+      transition: transform 0.3s ease;
+    }
+
+    /* Focus styles */
+    input:focus, textarea:focus, select:focus {
+      outline: none;
+      ring: 2px solid #f97316;
+    }
+
+    /* Print styles */
+    @media print {
+      .sidebar, .bottom-nav, .no-print { display: none !important; }
+      .main-content { margin: 0 !important; padding: 0 !important; }
+    }
+  </style>
+</head>
+<body class="bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 antialiased">
+
+  <!-- App Container -->
+  <div id="app" class="min-h-screen flex flex-col">
+
+    <!-- ============ HEADER ============ -->
+    <header id="header" class="sticky top-0 z-30 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl border-b border-gray-200 dark:border-gray-800 no-print">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="flex items-center justify-between h-16 sm:h-18">
+          <!-- Left: Menu + Logo -->
+          <div class="flex items-center gap-3">
+            <!-- Mobile menu button -->
+            <button id="menuBtn" class="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle menu">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </button>
+            <!-- Logo -->
+            <div class="flex items-center gap-2.5">
+              <img src="public/tick-icon.png" alt="Tick" class="w-9 h-9 rounded-xl shadow-lg shadow-brand-500/20">
+              <span id="appName" class="text-xl font-extrabold bg-gradient-to-r from-brand-500 to-brand-600 bg-clip-text text-transparent">Tick</span>
+            </div>
+          </div>
+
+          <!-- Center: Search (hidden on mobile) -->
+          <div class="hidden sm:block flex-1 max-w-md mx-4">
+            <div class="relative">
+              <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+              <input
+                type="text"
+                id="searchInput"
+                placeholder="Search tasks..."
+                class="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/50 transition-all"
+              >
+            </div>
+          </div>
+
+          <!-- Right: Actions -->
+          <div class="flex items-center gap-1.5 sm:gap-2">
+            <!-- Language Toggle -->
+            <button id="langToggle" class="px-2.5 py-1.5 rounded-xl bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors text-xs sm:text-sm font-bold tracking-wider" aria-label="Toggle language">
+              <span id="langLabel">FA</span>
+            </button>
+            <!-- Notification Toggle -->
+            <button id="notificationBtn" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors hidden" aria-label="Notifications" title="Notifications">
+              <svg id="bellIconActive" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+              </svg>
+              <svg id="bellIconMuted" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <!-- Theme Toggle -->
+            <button id="themeToggle" class="p-2.5 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" aria-label="Toggle theme">
+              <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+              </svg>
+              <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/>
+              </svg>
+            </button>
+            <!-- Add Task Button (Desktop) -->
+            <button id="addTaskBtn" class="hidden sm:flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white px-4 py-2.5 rounded-xl font-medium text-sm transition-all shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 active:scale-95">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+              </svg>
+              <span id="addTaskLabel">Add Task</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Mobile Search -->
+      <div class="sm:hidden px-4 pb-3">
+        <div class="relative">
+          <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          <input
+            type="text"
+            id="searchInputMobile"
+            placeholder="Search tasks..."
+            class="w-full pl-10 pr-4 py-2.5 bg-gray-100 dark:bg-gray-800 border-0 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/50 transition-all"
+          >
+        </div>
+      </div>
+    </header>
+
+    <!-- ============ MAIN LAYOUT ============ -->
+    <div class="flex flex-1 overflow-hidden">
+      <!-- ============ SIDEBAR OVERLAY (Mobile) ============ -->
+      <div id="sidebarOverlay" class="fixed inset-0 bg-black/40 backdrop-blur-sm z-20 hidden lg:hidden transition-opacity"></div>
+
+      <!-- ============ SIDEBAR ============ -->
+      <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 z-20 w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 transform -translate-x-full transition-transform duration-300 pt-16 lg:pt-0 flex flex-col">
+        <div class="flex-1 overflow-y-auto p-4 space-y-6">
+          <!-- Navigation -->
+          <nav class="space-y-1">
+            <button class="sidebar-link active w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-view="all">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+              </svg>
+              <span data-i18n="allTasks">All Tasks</span>
+              <span id="countAll" class="ml-auto text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2.5 py-0.5 rounded-full">0</span>
+            </button>
+            <button class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-view="today">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+              <span data-i18n="today">Today</span>
+              <span id="countToday" class="ml-auto text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2.5 py-0.5 rounded-full">0</span>
+            </button>
+            <button class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-view="important">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+              </svg>
+              <span data-i18n="important">Important</span>
+              <span id="countImportant" class="ml-auto text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2.5 py-0.5 rounded-full">0</span>
+            </button>
+            <button class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800" data-view="planned">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              <span data-i18n="planned">Planned</span>
+              <span id="countPlanned" class="ml-auto text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2.5 py-0.5 rounded-full">0</span>
+            </button>
+          </nav>
+
+          <!-- Categories -->
+          <div>
+            <h3 class="px-4 text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3" data-i18n="categories">Categories</h3>
+            <div id="categoriesList" class="space-y-1">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Progress -->
+          <div class="px-4">
+            <div class="flex items-center justify-between text-sm mb-2">
+              <span class="text-gray-500 dark:text-gray-400 font-medium" data-i18n="progress">Progress</span>
+              <span id="progressText" class="text-gray-400 dark:text-gray-500">0%</span>
+            </div>
+            <div class="w-full h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div id="progressBar" class="h-full bg-gradient-to-r from-brand-400 to-brand-600 rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Sidebar Footer -->
+        <div class="p-4 border-t border-gray-100 dark:border-gray-800">            <div class="flex items-center gap-3 px-4 py-2">
+              <img src="public/tick-icon.png" alt="Tick" class="w-8 h-8 rounded-lg shadow-sm">
+            <div>
+              <p class="text-sm font-medium text-gray-700 dark:text-gray-300" data-i18n="appName">Tick</p>
+              <p class="text-xs text-gray-400 dark:text-gray-500">v1.0.0</p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ============ MAIN CONTENT ============ -->
+      <main id="mainContent" class="main-content flex-1 overflow-y-auto pb-20 lg:pb-6">
+        <!-- Stats Bar -->
+        <div class="px-4 sm:px-6 pt-4 sm:pt-6">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div class="stat-card bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm">
+              <p class="text-xs text-gray-400 dark:text-gray-500 font-medium mb-1" data-i18n="total">Total</p>
+              <p id="statTotal" class="text-2xl font-bold text-gray-900 dark:text-white">0</p>
+            </div>
+            <div class="stat-card bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm">
+              <p class="text-xs text-gray-400 dark:text-gray-500 font-medium mb-1" data-i18n="inProgress">In Progress</p>
+              <p id="statInProgress" class="text-2xl font-bold text-brand-500">0</p>
+            </div>
+            <div class="stat-card bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm">
+              <p class="text-xs text-gray-400 dark:text-gray-500 font-medium mb-1" data-i18n="completed">Completed</p>
+              <p id="statCompleted" class="text-2xl font-bold text-green-500">0</p>
+            </div>
+            <div class="stat-card bg-white dark:bg-gray-900 rounded-2xl p-4 border border-gray-100 dark:border-gray-800 shadow-sm">
+              <p class="text-xs text-gray-400 dark:text-gray-500 font-medium mb-1" data-i18n="overdue">Overdue</p>
+              <p id="statOverdue" class="text-2xl font-bold text-red-500">0</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filters & View -->
+        <div class="px-4 sm:px-6 mt-4 sm:mt-6">
+          <div class="flex items-center justify-between">
+            <!-- Status Tabs -->
+            <div class="flex gap-4 sm:gap-6 border-b border-gray-200 dark:border-gray-800">
+              <button class="status-tab active pb-3 text-sm font-medium text-gray-500 dark:text-gray-400 border-b-2 border-transparent" data-filter="all">
+                <span data-i18n="all">All</span>
+              </button>
+              <button class="status-tab pb-3 text-sm font-medium text-gray-500 dark:text-gray-400 border-b-2 border-transparent" data-filter="todo">
+                <span data-i18n="active">Active</span>
+              </button>
+              <button class="status-tab pb-3 text-sm font-medium text-gray-500 dark:text-gray-400 border-b-2 border-transparent" data-filter="done">
+                <span data-i18n="completed">Completed</span>
+              </button>
+            </div>
+
+            <!-- Sort -->
+            <div class="flex items-center gap-2">
+              <select id="sortSelect" class="text-xs bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-lg px-2.5 py-1.5 text-gray-600 dark:text-gray-400 focus:ring-2 focus:ring-brand-500/50">
+                <option value="newest" data-i18n="newest">Newest</option>
+                <option value="oldest" data-i18n="oldest">Oldest</option>
+                <option value="priority" data-i18n="priority">Priority</option>
+                <option value="dueDate" data-i18n="dueDate">Due Date</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task List -->
+        <div id="taskList" class="px-4 sm:px-6 mt-4 sm:mt-6 space-y-2">
+          <!-- Tasks rendered here -->
+        </div>
+      </main>
+    </div>
+
+    <!-- ============ MOBILE BOTTOM NAV ============ -->
+    <nav class="bottom-nav lg:hidden fixed bottom-0 left-0 right-0 z-20 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-t border-gray-200 dark:border-gray-800 safe-area-bottom no-print">
+      <div class="flex items-center justify-around h-16 px-2">
+        <button class="bottom-nav-item active flex flex-col items-center gap-0.5 px-3 py-1" data-view="all">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+          </svg>
+          <span class="text-[10px] font-medium" data-i18n="allTasks">Tasks</span>
+        </button>
+        <button class="bottom-nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-view="today">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <span class="text-[10px] font-medium" data-i18n="today">Today</span>
+        </button>
+        <!-- Center FAB (mobile) -->
+        <button id="addTaskBtnMobile" class="flex flex-col items-center gap-0.5 px-3 py-1">
+          <div class="w-12 h-12 -mt-6 bg-gradient-to-br from-brand-500 to-brand-600 rounded-2xl flex items-center justify-center shadow-xl shadow-brand-500/30 active:scale-95 transition-transform">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+          </div>
+        </button>
+        <button class="bottom-nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-view="important">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/>
+          </svg>
+          <span class="text-[10px] font-medium" data-i18n="important">Important</span>
+        </button>
+        <button class="bottom-nav-item flex flex-col items-center gap-0.5 px-3 py-1" data-view="planned">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span class="text-[10px] font-medium" data-i18n="planned">Planned</span>
+        </button>
+      </div>
+    </nav>
+
+    <!-- ============ TASK MODAL ============ -->
+    <div id="taskModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 hidden bg-black/50 transition-opacity">
+      <div class="modal-content bg-white dark:bg-gray-900 rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl animate-scale-in">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between p-5 sm:p-6 border-b border-gray-100 dark:border-gray-800">
+          <h2 id="modalTitle" class="text-lg font-bold text-gray-900 dark:text-white">Add Task</h2>
+          <button id="closeModalBtn" class="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
+            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="p-5 sm:p-6 space-y-5">
+          <!-- Title -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5" data-i18n="title">Title</label>
+            <input
+              type="text"
+              id="taskTitleInput"
+              placeholder="What needs to be done?"
+              class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/50 transition-all"
+              maxlength="100"
+              autofocus
+            >
+          </div>
+
+          <!-- Description -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5" data-i18n="description">Description</label>
+            <textarea
+              id="taskDescInput"
+              rows="3"
+              placeholder="Add details..."
+              class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/50 transition-all resize-none"
+              maxlength="500"
+            ></textarea>
+          </div>
+
+          <!-- Row: Priority + Category -->
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5" data-i18n="priority">Priority</label>
+              <select id="taskPriorityInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/50 transition-all">
+                <option value="low" data-i18n="low">Low</option>
+                <option value="medium" selected data-i18n="medium">Medium</option>
+                <option value="high" data-i18n="high">High</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5" data-i18n="category">Category</label>
+              <select id="taskCategoryInput" class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/50 transition-all">
+                <option value="General" data-i18n="general">General</option>
+                <option value="Work" data-i18n="work">Work</option>
+                <option value="Personal" data-i18n="personal">Personal</option>
+                <option value="Health" data-i18n="health">Health</option>
+                <option value="Finance" data-i18n="finance">Finance</option>
+                <option value="Education" data-i18n="education">Education</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Due Date -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5" data-i18n="dueDate">Due Date</label>
+            <input
+              type="date"
+              id="taskDueDateInput"
+              class="w-full px-4 py-3 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-sm focus:ring-2 focus:ring-brand-500/50 transition-all"
+            >
+          </div>
+
+          <!-- Actions -->
+          <div class="flex gap-3 pt-2">
+            <button id="saveTaskBtn" class="flex-1 bg-brand-500 hover:bg-brand-600 text-white font-medium px-6 py-3 rounded-xl text-sm transition-all shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 active:scale-95">
+              <span data-i18n="save">Save</span>
+            </button>
+            <button id="cancelTaskBtn" class="px-6 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+              <span data-i18n="cancel">Cancel</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ DELETE CONFIRM MODAL ============ -->
+    <div id="deleteModal" class="modal-overlay fixed inset-0 z-50 flex items-center justify-center p-4 hidden bg-black/50 transition-opacity">
+      <div class="bg-white dark:bg-gray-900 rounded-3xl w-full max-w-sm p-6 shadow-2xl animate-scale-in text-center">
+        <div class="w-16 h-16 mx-auto mb-4 bg-red-50 dark:bg-red-900/20 rounded-2xl flex items-center justify-center">
+          <svg class="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+          </svg>
+        </div>
+        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2" data-i18n="deleteConfirm">Delete Task?</h3>
+        <p class="text-sm text-gray-500 dark:text-gray-400 mb-6" data-i18n="deleteWarning">This action cannot be undone.</p>
+        <div class="flex gap-3">
+          <button id="confirmDeleteBtn" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium px-6 py-3 rounded-xl text-sm transition-all active:scale-95">
+            <span data-i18n="delete">Delete</span>
+          </button>
+          <button id="cancelDeleteBtn" class="flex-1 px-6 py-3 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+            <span data-i18n="cancel">Cancel</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ WELCOME MODAL ============ -->
+    <div id="welcomeModal" class="modal-overlay fixed inset-0 z-[60] flex items-center justify-center p-4 hidden bg-black/60 transition-opacity">
+      <div class="modal-content bg-white dark:bg-gray-900 rounded-3xl w-full max-w-lg shadow-2xl animate-scale-in overflow-hidden">
+        <!-- Hero -->
+        <div class="relative bg-gradient-to-br from-brand-500 to-brand-700 px-6 sm:px-8 pt-8 sm:pt-10 pb-16 sm:pb-20 text-center">
+          <div class="absolute top-4 right-4">
+            <button id="welcomeCloseBtn" class="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 transition-colors">
+              <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="w-16 h-16 mx-auto mb-4 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-sm shadow-lg">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-extrabold text-white mb-2" data-i18n="welcomeTitle">Welcome to Tick!</h2>
+          <p class="text-brand-100 text-sm sm:text-base font-medium" data-i18n="welcomeSubtitle">Your Smart Task Manager</p>
+        </div>
+
+        <!-- Content -->
+        <div class="px-6 sm:px-8 -mt-8 sm:-mt-10 relative z-10">
+          <div class="bg-white dark:bg-gray-800 rounded-2xl p-5 sm:p-6 shadow-xl border border-gray-100 dark:border-gray-700">
+            <p class="text-sm text-gray-600 dark:text-gray-300 mb-4" data-i18n="welcomeDesc">Get organized and get things done. Here is how to start:</p>
+            <ul class="space-y-3">
+              <li class="flex items-start gap-3 text-sm">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">1</span>
+                <span class="text-gray-600 dark:text-gray-300" data-i18n="welcomeStep1">Click the + button to add your first task</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">2</span>
+                <span class="text-gray-600 dark:text-gray-300" data-i18n="welcomeStep2">Use the sidebar to filter by Today, Important, or Planned</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">3</span>
+                <span class="text-gray-600 dark:text-gray-300" data-i18n="welcomeStep3">Drag and drop tasks to reorder them</span>
+              </li>
+              <li class="flex items-start gap-3 text-sm">
+                <span class="flex-shrink-0 w-6 h-6 rounded-full bg-brand-100 dark:bg-brand-900/30 text-brand-600 dark:text-brand-400 flex items-center justify-center text-xs font-bold">4</span>
+                <span class="text-gray-600 dark:text-gray-300" data-i18n="welcomeStep4">Toggle dark mode and switch between EN / FA</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="px-6 sm:px-8 pb-6 sm:pb-8 pt-5">
+          <label class="flex items-center gap-3 mb-4 cursor-pointer group">
+            <input type="checkbox" id="welcomeDontShow" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-brand-500 focus:ring-brand-500/50 cursor-pointer">
+            <span class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-700 dark:group-hover:text-gray-300 transition-colors" data-i18n="welcomeDontShow">Don't show again</span>
+          </label>
+          <button id="welcomeStartBtn" class="w-full bg-brand-500 hover:bg-brand-600 text-white font-semibold px-6 py-3.5 rounded-xl text-sm transition-all shadow-lg shadow-brand-500/25 hover:shadow-xl hover:shadow-brand-500/30 active:scale-[0.98]">
+            <span data-i18n="welcomeStart">Get Started</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ TOAST CONTAINER ============ -->
+    <div id="toastContainer" class="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none items-center"></div>
+
+  </div>
+
+  <!-- ============ JAVASCRIPT ============ -->
+  <script src="app.js"></script>
+</body>
+</html>

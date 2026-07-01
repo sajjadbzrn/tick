@@ -1,0 +1,42 @@
+{
+  "name": "Tick - Task Manager",
+  "short_name": "Tick",
+  "description": "A modern, minimal task manager PWA",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ea580c",
+  "orientation": "portrait-primary",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "public/tick-icon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "public/tick-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "All Tasks",
+      "short_name": "Tasks",
+      "description": "View all tasks",
+      "url": "/?view=all"
+    },
+    {
+      "name": "Add Task",
+      "short_name": "Add",
+      "description": "Add a new task",
+      "url": "/?add=true"
+    }
+  ]
+}
